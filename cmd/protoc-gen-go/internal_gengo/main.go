@@ -57,6 +57,7 @@ var (
 	protojsonPackage     goImportPath = protogen.GoImportPath("google.golang.org/protobuf/encoding/protojson")
 	protoreflectPackage  goImportPath = protogen.GoImportPath("google.golang.org/protobuf/reflect/protoreflect")
 	protoregistryPackage goImportPath = protogen.GoImportPath("google.golang.org/protobuf/reflect/protoregistry")
+	protoGithubPackage   goImportPath = protogen.GoImportPath("github.com/golang/protobuf/proto")
 )
 
 type goImportPath interface {
@@ -76,6 +77,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	packageDoc := genPackageKnownComment(f)
 	g.P(packageDoc, "package ", f.GoPackageName)
+	g.P("import proto \"github.com/golang/protobuf/proto\"")
 	g.P()
 
 	// Emit a static check that enforces a minimum version of the proto package.
@@ -517,8 +519,7 @@ func genMessageBaseMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageInf
 
 	// ToDB method.
 	g.P("func (x *", m.GoIdent, ") ToDB() ([]byte, error) {")
-	g.P("data, err := proto.Marshal(al)")
-	g.P("return data, err")
+	g.P("return proto.Marshal(x)")
 	g.P("}")
 	g.P()
 
