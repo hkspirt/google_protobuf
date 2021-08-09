@@ -507,6 +507,21 @@ func genMessageBaseMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageInf
 	g.P("}")
 	g.P()
 
+
+
+	// FromDB method.
+	g.P("func (x *", m.GoIdent, ") FromDB(data []byte) error {")
+	g.P("return proto.Unmarshal(data, x)")
+	g.P("}")
+	g.P()
+
+	// ToDB method.
+	g.P("func (x *", m.GoIdent, ") ToDB() ([]byte, error) {")
+	g.P("data, err := proto.Marshal(al)")
+	g.P("return data, err")
+	g.P("}")
+	g.P()
+
 	// ProtoMessage method.
 	g.P("func (*", m.GoIdent, ") ProtoMessage() {}")
 	g.P()
