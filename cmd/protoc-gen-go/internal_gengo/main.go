@@ -57,7 +57,6 @@ var (
 	protojsonPackage     goImportPath = protogen.GoImportPath("google.golang.org/protobuf/encoding/protojson")
 	protoreflectPackage  goImportPath = protogen.GoImportPath("google.golang.org/protobuf/reflect/protoreflect")
 	protoregistryPackage goImportPath = protogen.GoImportPath("google.golang.org/protobuf/reflect/protoregistry")
-	protoGithubPackage   goImportPath = protogen.GoImportPath("github.com/golang/protobuf/proto")
 )
 
 type goImportPath interface {
@@ -77,7 +76,7 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 	packageDoc := genPackageKnownComment(f)
 	g.P(packageDoc, "package ", f.GoPackageName)
-	g.P("import proto \"github.com/golang/protobuf/proto\"")
+	g.P("import proto \"google.golang.org/protobuf/proto\"")
 	g.P()
 
 	// Emit a static check that enforces a minimum version of the proto package.
@@ -509,8 +508,6 @@ func genMessageBaseMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageInf
 	g.P("}")
 	g.P()
 
-
-
 	// FromDB method.
 	g.P("func (x *", m.GoIdent, ") FromDB(data []byte) error {")
 	g.P("return proto.Unmarshal(data, x)")
@@ -626,38 +623,38 @@ func genMessageGetterMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageI
 }
 
 func genMessageSetterMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageInfo) {
-    for _, field := range m.Fields {
-        if !field.Desc.IsWeak() {
-            goType, pointer := fieldGoType(g, f, field)
-            leadingComments := appendDeprecationSuffix("", field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
-            g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, " (val ", goType, ") {")
-            g.P("if x != nil {")
-            star := ""
-            if pointer {
-                star = "*"
-            }
-            g.P(star, "x.", field.GoName, " = val")
-            g.P("}")
-            g.P("}")
-        }else {
-            genNoInterfacePragma(g, m.isTracked)
+	for _, field := range m.Fields {
+		if !field.Desc.IsWeak() {
+			goType, pointer := fieldGoType(g, f, field)
+			leadingComments := appendDeprecationSuffix("", field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+			g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, " (val ", goType, ") {")
+			g.P("if x != nil {")
+			star := ""
+			if pointer {
+				star = "*"
+			}
+			g.P(star, "x.", field.GoName, " = val")
+			g.P("}")
+			g.P("}")
+		} else {
+			genNoInterfacePragma(g, m.isTracked)
 
-            g.Annotate(m.GoIdent.GoName+".Set"+field.GoName, field.Location)
-            leadingComments := appendDeprecationSuffix("",
-                field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
-            g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, "(v ", protoPackage.Ident("Message"), ") {")
-            g.P("var w *", protoimplPackage.Ident("WeakFields"))
-            g.P("if x != nil {")
-            g.P("w = &x.", genid.WeakFields_goname)
-            if m.isTracked {
-                g.P("_ = x.", genid.WeakFieldPrefix_goname+field.GoName)
-            }
-            g.P("}")
-            g.P(protoimplPackage.Ident("X"), ".SetWeak(w, ", field.Desc.Number(), ", ", strconv.Quote(string(field.Message.Desc.FullName())), ", v)")
-            g.P("}")
-            g.P()
-        }
-    }
+			g.Annotate(m.GoIdent.GoName+".Set"+field.GoName, field.Location)
+			leadingComments := appendDeprecationSuffix("",
+				field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+			g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, "(v ", protoPackage.Ident("Message"), ") {")
+			g.P("var w *", protoimplPackage.Ident("WeakFields"))
+			g.P("if x != nil {")
+			g.P("w = &x.", genid.WeakFields_goname)
+			if m.isTracked {
+				g.P("_ = x.", genid.WeakFieldPrefix_goname+field.GoName)
+			}
+			g.P("}")
+			g.P(protoimplPackage.Ident("X"), ".SetWeak(w, ", field.Desc.Number(), ", ", strconv.Quote(string(field.Message.Desc.FullName())), ", v)")
+			g.P("}")
+			g.P()
+		}
+	}
 }
 
 // fieldGoType returns the Go type used for a field.
