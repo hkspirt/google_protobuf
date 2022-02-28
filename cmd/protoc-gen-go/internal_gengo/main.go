@@ -624,24 +624,12 @@ func genMessageGetterMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageI
 
 func genMessageSetterMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageInfo) {
 	for _, field := range m.Fields {
-		if !field.Desc.IsWeak() {
-			goType, pointer := fieldGoType(g, f, field)
-			leadingComments := appendDeprecationSuffix("", field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
-			g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, " (val ", goType, ") {")
-			g.P("if x != nil {")
-			star := ""
-			if pointer {
-				star = "*"
-			}
-			g.P(star, "x.", field.GoName, " = val")
-			g.P("}")
-			g.P("}")
-		} else {
+		goType, pointer := fieldGoType(g, f, field)
+		leadingComments := appendDeprecationSuffix("", field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
+		switch {
+		case field.Desc.IsWeak():
 			genNoInterfacePragma(g, m.isTracked)
-
 			g.Annotate(m.GoIdent.GoName+".Set"+field.GoName, field.Location)
-			leadingComments := appendDeprecationSuffix("",
-				field.Desc.Options().(*descriptorpb.FieldOptions).GetDeprecated())
 			g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, "(v ", protoPackage.Ident("Message"), ") {")
 			g.P("var w *", protoimplPackage.Ident("WeakFields"))
 			g.P("if x != nil {")
@@ -653,6 +641,22 @@ func genMessageSetterMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageI
 			g.P(protoimplPackage.Ident("X"), ".SetWeak(w, ", field.Desc.Number(), ", ", strconv.Quote(string(field.Message.Desc.FullName())), ", v)")
 			g.P("}")
 			g.P()
+		case field.Oneof != nil && !field.Oneof.Desc.IsSynthetic():
+			g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, " (val ", goType, ") {")
+			g.P("if x != nil {")
+			g.P("x.", field.Oneof.GoName, " = &", field.GoIdent, "{", field.GoName, ": val}")
+			g.P("}")
+			g.P("}")
+		default:
+			g.P(leadingComments, "func (x *", m.GoIdent, ") Set", field.GoName, " (val ", goType, ") {")
+			g.P("if x != nil {")
+			star := ""
+			if pointer {
+				star = "*"
+			}
+			g.P(star, "x.", field.GoName, " = val")
+			g.P("}")
+			g.P("}")
 		}
 	}
 }
